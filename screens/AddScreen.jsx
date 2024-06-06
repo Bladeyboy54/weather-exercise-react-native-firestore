@@ -1,15 +1,39 @@
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import {Picker} from '@react-native-picker/picker'; //a lot of other cool pickers available rather than this one
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { addReading, getAllDays } from '../services/FirestoreServices';
+import { Timestamp } from 'firebase/firestore';
 
-const AddScreen = () => {
+const AddScreen = ({navigation}) => {
 
     const [temperature, setTemp] = useState("")
     const [selectedDay, setSelectedDay] = useState("")
 
-    const handleCreation = () => {
+    const handleCreation = async () => {
         // TODO: Create new reading for the specific day
+        var reading = {
+            temp: temperature,
+            time: Timestamp.now()
+        }
+
+        var success = await addReading(selectedDay, reading)
+
+        if(success) {
+            navigation.goBack()
+        }
     }
+
+    useEffect(() =>{
+        handleGettingDays()
+    }, [])
+
+    const [days, setDays] = useState([])
+
+    const handleGettingDays = async() => {
+        var daysData = await getAllDays()
+        setDays(daysData)
+    }
+
 
   return (
     <View style={styles.container}>
@@ -21,8 +45,13 @@ const AddScreen = () => {
                 setSelectedDay(itemValue)
             }>
                 {/* TODO: Update to data from db */}
-                <Picker.Item label="Monday" value="monday" />
-                <Picker.Item label="Tuesday" value="tuesday" />
+                {days != [] ? (
+                    days.map((day) => (
+                        <Picker.Item key={day.id} label={day.name} value={day.id} />
+                    ))   
+                ): null}
+                
+                
         </Picker>
 
         <TextInput

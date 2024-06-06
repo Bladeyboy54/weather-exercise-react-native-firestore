@@ -1,6 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const ReadingCard = (props) => {
 
@@ -13,6 +16,38 @@ const ReadingCard = (props) => {
         {id: "3", temp: 12, time: "6:00"}
     ]
 
+    const [readings, setReadings] = useState([])
+
+    useFocusEffect(
+      React.useCallback(() => {
+        // Do something when the screen is focused
+        console.log("Focused")
+
+        const dayRef = doc(db, "days", day.id)
+
+        const readingRef = collection(dayRef, "readings")
+
+        const unsubscribe = onSnapshot(readingRef, (querySnapshot) => {
+
+          const readingData = [];
+
+          querySnapshot.forEach((doc) => {
+              readingData.push(doc.data());
+            console.log("Current readings: ", doc.data());  
+          });
+          
+          setReadings(readingData)
+        });
+
+        return () => {
+          // Do something when the screen is unfocused
+          // Useful for cleanup functions
+          console.log("unfocused")
+          unsubscribe();
+        };
+      }, [])
+    );
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>
@@ -22,11 +57,14 @@ const ReadingCard = (props) => {
       </Text>
 
       <View style={styles.readingsBlock}>
-        {dummyReadings.map((item) => (
-            <View style={styles.readingBubble} key={item.id}>
-                <Text style={styles.readingText}>{item.temp}</Text>
+        {readings != [] ? (
+          readings.map((item) => (
+            <View style={styles.readingBubble} key={item.time}>
+              <Text style={styles.readingText}>{item.temp}</Text>
             </View>
-        ))}
+          ))
+        ): <Text> No readings </Text>}
+        
       </View>
       
     </View>
